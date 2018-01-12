@@ -3,6 +3,14 @@
     "description": "Mattermost monolog integration",
     "homepage": "https://github.com/carpediem/mattermost-monolog",
     "version": "1.0.0",
+    "keywords": [
+        "mattermost",
+        "php",
+        "monolog",
+        "monolog-handler",
+        "monolog-formatter",
+        "php7"
+    ],
     "type": "library",
     "require": {
     	"php": ">=5.6.0",

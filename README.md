@@ -1,9 +1,8 @@
 # Mattermost PHP Monolog
 
-This package allows sending log to Mattermost webhook using a dedicated Handler.
+This package allows sending log to Mattermost webhook using a dedicated Handler and Formatter.
 
-Thisipackage requires [Carpediem/mattermost-webhook]
-](https://github.com/carpediem/mattermost-webhook)
+This package requires [carpediem/mattermost-webhook](https://github.com/carpediem/mattermost-webhook)
 
 ## System Requirements
 
@@ -31,28 +30,25 @@ use Carpediem\Mattermost\Webhook\Client;
 use GuzzleHttp\Client as GuzzleClient;
 use Monolog\Logger;
 
-$client = new Client(new GuzzleClient());
-$handler = new Handler(
-    'https://talk.2town.net/hooks/en8t69azpjbfiq8ysjdf893b7r',
-    $client
-);
+$mattermost_client = new Client(new GuzzleClient());
+$monolog_handler = new Handler('https://your_mattermost_webhook_url', $mattermost_client);
 
-$template = (new Message())
+$mattermost_message_template = (new Message())
     ->setChannel('alerts')
     ->setUsername('AlertBot')
     ->setIconUrl('https://cdn2.iconfinder.com/data/icons/security-2-1/512/bug-512.png')
 ;
 
-$formatter = new Formatter($template);
+$monolog_formatter = new Formatter($mattermost_message_template);
 
-$handler->setFormatter($formatter);
+$monolog_handler->setFormatter($monolog_formatter);
 
 $logger = new Logger('MyAwesomeLogger');
-$logger->pushHandler($handler);
+$logger->pushHandler($monolog_handler);
 ```
 
 ## Advanced usage
 
-If you don't like our formatter don't worry you can create your own type of formatter as long as 
+If you don't like our formatter don't worry you can create your own formatter as long as 
 
 `Formatter::format` and `Formatter::formatBatch` returns a valid `Carpediem\Mattermost\Webhook\Message` object.
