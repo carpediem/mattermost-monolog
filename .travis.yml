@@ -1,0 +1,34 @@
+language: php
+
+sudo: false
+
+matrix:
+  include:
+    - php: 7.0
+      env: VALIDATE_CODING_STYLE=false IGNORE_PLATFORMS=false
+    - php: 7.1
+      env: VALIDATE_CODING_STYLE=true IGNORE_PLATFORMS=false
+    - php: 7.2
+      env: VALIDATE_CODING_STYLE=false IGNORE_PLATFORMS=true
+    - php: nightly
+      env: VALIDATE_CODING_STYLE=false IGNORE_PLATFORMS=true
+  allow_failures:
+    - php: nightly
+  fast_finish: true
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+before_install:
+  - travis_retry composer self-update
+
+install:
+  - if [ "$IGNORE_PLATFORMS" == "true" ]; then travis_retry composer update --no-interaction --prefer-source --ignore-platform-reqs; fi
+  - if [ "$IGNORE_PLATFORMS" == "false" ]; then travis_retry composer update --no-interaction --prefer-source; fi
+
+script:
+  - composer phpunit
+
+after_script:
+ - if [ "$VALIDATE_CODING_STYLE" == "true" ]; then composer phpcs; fi

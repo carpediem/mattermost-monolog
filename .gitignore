@@ -1,0 +1,8 @@
+.idea
+.php_cs.cache
+build
+composer.lock
+docs/_site
+vendor
+/nbproject/private/
+test.php
