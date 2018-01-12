@@ -30,25 +30,28 @@ use Carpediem\Mattermost\Webhook\Client;
 use GuzzleHttp\Client as GuzzleClient;
 use Monolog\Logger;
 
-$mattermost_client = new Client(new GuzzleClient());
-$monolog_handler = new Handler('https://your_mattermost_webhook_url', $mattermost_client);
-
 $mattermost_message_template = (new Message())
     ->setChannel('alerts')
     ->setUsername('AlertBot')
     ->setIconUrl('https://cdn2.iconfinder.com/data/icons/security-2-1/512/bug-512.png')
 ;
+$mattermost_monolog_formatter = new Formatter($mattermost_message_template);
 
-$monolog_formatter = new Formatter($mattermost_message_template);
-
-$monolog_handler->setFormatter($monolog_formatter);
+$mattermost_client = new Client(new GuzzleClient(['http_errors' => false]));
+$mattermost_monolog_handler = new Handler(
+    'https://your_mattermost_webhook_url',
+    $mattermost_client
+    Logger::WARNING,
+    true
+);
+$mattermost_monolog_handler->setFormatter($mattermost_monolog_formatter);
 
 $logger = new Logger('MyAwesomeLogger');
-$logger->pushHandler($monolog_handler);
+$logger->pushHandler($mattermost_monolog_handler);
 ```
 
 ## Advanced usage
 
-If you don't like our formatter don't worry you can create your own formatter as long as 
+If you don't like our formatter don't worry you can create your own formatter as long as
 
 `Formatter::format` and `Formatter::formatBatch` returns a valid `Carpediem\Mattermost\Webhook\Message` object.
