@@ -30,7 +30,7 @@ use Carpediem\Mattermost\Webhook\Client;
 use GuzzleHttp\Client as GuzzleClient;
 use Monolog\Logger;
 
-$mattermost_message_template = (new Message())
+$mattermost_message_template = (new Message('This text will be overriden by the logger'))
     ->setChannel('alerts')
     ->setUsername('AlertBot')
     ->setIconUrl('https://cdn2.iconfinder.com/data/icons/security-2-1/512/bug-512.png')

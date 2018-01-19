@@ -4,7 +4,7 @@
 *
 * @license http://opensource.org/licenses/MIT
 * @link https://github.com/carpediem/mattermost-monolog/
-* @version 0.1.0
+* @version 1.1.0
 * @package carpediem.mattermost-php
 *
 * For the full copyright and license information, please view the LICENSE
@@ -13,23 +13,43 @@
 
 namespace Carpediem\Mattermost\Monolog;
 
-use Carpediem\Mattermost\Webhook\Client;
-use Carpediem\Mattermost\Webhook\Message;
-use GuzzleHttp\Psr7;
+use Carpediem\Mattermost\Webhook\ClientInterface;
+use Carpediem\Mattermost\Webhook\MessageInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
+use Psr\Http\Message\UriInterface;
 
 class Handler extends AbstractProcessingHandler
 {
-    protected $mattermost_client;
+    /**
+     * @var ClientInterface
+     */
+    protected $client;
 
-    protected $mattermost_uri;
+    /**
+     * The mattermost incoming webhook Url
+     *
+     * @var string|UriInterface
+     */
+    protected $uri;
 
-    public function __construct($uri, Client $client, $level = Logger::DEBUG, $bubble = true)
+    /**
+     * New instance.
+     *
+     * @param string|UriInterface $uri
+     * @param ClientInterface     $client
+     * @param int                 $level
+     * @param bool                $bubble
+     */
+    public function __construct($uri, ClientInterface $client, $level = Logger::DEBUG, $bubble = true)
     {
         parent::__construct($level, $bubble);
-        $this->mattermost_client = $client;
-        $this->mattermost_uri = Psr7\uri_for($uri);
+        $this->client = $client;
+        if (!$uri instanceof UriInterface && !is_string($uri)) {
+            throw new Exception(sprintf('% expects the uri to be an string or a %s object %s given', __METHOD__, UriInterface::class, gettype($uri)));
+        }
+
+        $this->uri = $uri;
     }
 
     /**
@@ -37,10 +57,10 @@ class Handler extends AbstractProcessingHandler
      */
     protected function write(array $record)
     {
-        if (!$record['formatted'] instanceof Message) {
-            throw new Exception(sprintf('%s expects the `formatted` index to contain a %s object', get_class($this), Message::class));
+        if (!$record['formatted'] instanceof MessageInterface) {
+            throw new Exception(sprintf('%s expects the `formatted` index to contain an object implementing %s', get_class($this), MessageInterface::class));
         }
 
-        $this->mattermost_client->send($this->mattermost_uri, $record['formatted'], ['http_errors' => false]);
+        $this->client->notify($this->uri, $record['formatted']);
     }
 }

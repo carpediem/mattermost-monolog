@@ -66,6 +66,12 @@ final class HandlerTest extends TestCase
         $handler->handle($this->getRecord());
     }
 
+    public function testHandlerThrowsExceptionOnInstantiation()
+    {
+        $this->expectException(Exception::class);
+        new Handler((object) 'http://localhost', new Client(new GuzzleClient()));
+    }
+
     public function testHandlerSend()
     {
         // Create a mock and queue two responses.
@@ -74,7 +80,7 @@ final class HandlerTest extends TestCase
         $httpClient = new GuzzleClient(['handler' => $handler]);
         $client = new Client($httpClient);
         $handler = new Handler('http://localhost', $client);
-        $handler->setFormatter(new Formatter(new Message()));
+        $handler->setFormatter(new Formatter(new Message('basic message')));
         $this->assertFalse($handler->handle($this->getRecord()));
     }
 }

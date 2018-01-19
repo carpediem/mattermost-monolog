@@ -28,7 +28,7 @@ final class FormatterTest extends TestCase
             'level_name' => Logger::getLevelName($level),
             'channel' => 'test',
             'datetime' => DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true))),
-            'extra' => [],
+            'extra' => $context,
         ];
     }
 
@@ -54,7 +54,7 @@ final class FormatterTest extends TestCase
 
     public function testFormat()
     {
-        $formatter = new Formatter(new Message());
+        $formatter = new Formatter(new Message('basic message'));
         $record = $this->getRecord();
 
         $message = $formatter->format($record);
@@ -63,7 +63,7 @@ final class FormatterTest extends TestCase
 
     public function testFormatBatch()
     {
-        $formatter = new Formatter(new Message());
+        $formatter = new Formatter(new Message('basic message'));
         $records = $this->getMultipleRecords();
 
         $message = $formatter->formatBatch($records);

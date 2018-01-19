@@ -4,7 +4,7 @@
 *
 * @license http://opensource.org/licenses/MIT
 * @link https://github.com/carpediem/mattermost-monolog/
-* @version 0.1.0
+* @version 1.1.0
 * @package carpediem.mattermost-php
 *
 * For the full copyright and license information, please view the LICENSE
@@ -14,27 +14,37 @@
 namespace Carpediem\Mattermost\Monolog;
 
 use Carpediem\Mattermost\Webhook\Attachment;
-use Carpediem\Mattermost\Webhook\Message;
+use Carpediem\Mattermost\Webhook\MessageInterface;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Formatter\NormalizerFormatter;
 use Monolog\Logger;
 
 /**
- * Formats incoming records into Message instance
+ * Formats incoming records into MessageInterface instance
  */
 class Formatter implements FormatterInterface
 {
     const COLOR_DANGER = 'danger';
     const COLOR_WARNING = 'warning';
     const COLOR_GOOD = 'good';
-    const COLOR_DEFAULT = '#e3e4e6';
+    const COLOR_DEFAULT = 'default';
+
+    /**
+     * @var MessageInterface
+     */
+    private $message;
+
+    /**
+     * @var NormalizerFormatter
+     */
+    private $formatter;
 
     /**
      * New instance
      *
-     * @param Message $message Template message with default value
+     * @param MessageInterface $message Template message with default value
      */
-    public function __construct(Message $message)
+    public function __construct(MessageInterface $message)
     {
         $this->message = clone $message;
         $this->formatter = new NormalizerFormatter();
@@ -45,14 +55,11 @@ class Formatter implements FormatterInterface
      */
     public function formatBatch(array $records)
     {
-        $attachments = array_map([$this, 'setAttachment'], $records);
-
         $message = clone $this->message;
-        $message
-            ->setText('### Alert Batches from '.date_create()->format('Y-m-d H:i:s'))
-            ->setAttachments($attachments);
 
-        return $message;
+        return $message
+            ->setText('### Batch alerts from '.date_create()->format('Y-m-d H:i:s'))
+            ->setAttachments(array_map([$this, 'setAttachment'], $records));
     }
 
     /**
@@ -60,12 +67,11 @@ class Formatter implements FormatterInterface
      */
     public function format(array $record)
     {
-        $attachment = $this->setAttachment($record);
         $message = clone $this->message;
 
         return $message
             ->setText('### Alert from '.date_create()->format('Y-m-d H:i:s'))
-            ->setAttachments([$attachment]);
+            ->setAttachments([$this->setAttachment($record)]);
     }
 
     /**
@@ -77,14 +83,10 @@ class Formatter implements FormatterInterface
      */
     private function setAttachment(array $record)
     {
-        $color = $this->setAttachmentColor($record['level']);
-        $text = $this->setAttachmentText($record);
-
-        return (new Attachment())
-            ->setColor($color)
+        return (new Attachment($record['message']))
+            ->setColor($this->setAttachmentColor($record['level']))
             ->setTitle('Details')
-            ->setFallback($record['message'])
-            ->setText($text)
+            ->setText($this->setAttachmentText($record))
         ;
     }
 
@@ -97,16 +99,30 @@ class Formatter implements FormatterInterface
      */
     private function setAttachmentColor($level)
     {
-        switch (true) {
-            case $level >= Logger::ERROR:
-                return self::COLOR_DANGER;
-            case $level >= Logger::WARNING:
-                return self::COLOR_WARNING;
-            case $level >= Logger::INFO:
-                return self::COLOR_GOOD;
-            default:
-                return self::COLOR_DEFAULT;
+        static $levels_colors = [
+            Logger::DEBUG     => self::COLOR_DEFAULT,
+            Logger::INFO      => self::COLOR_GOOD,
+            Logger::NOTICE    => self::COLOR_GOOD,
+            Logger::WARNING   => self::COLOR_WARNING,
+            Logger::ERROR     => self::COLOR_DANGER,
+            Logger::CRITICAL  => self::COLOR_DANGER,
+            Logger::ALERT     => self::COLOR_DANGER,
+            Logger::EMERGENCY => self::COLOR_DANGER,
+        ];
+
+        static $color_lists = [
+            self::COLOR_DANGER => '#d50200',
+            self::COLOR_WARNING => '#de9e31',
+            self::COLOR_GOOD => '#2fa44f',
+            self::COLOR_DEFAULT => '#e3e4e6',
+        ];
+
+        $color_index = self::COLOR_DEFAULT;
+        if (isset($levels_colors[$level])) {
+            $color_index = $levels_colors[$level];
         }
+
+        return $color_lists[$color_index];
     }
 
     /**
@@ -124,12 +140,12 @@ class Formatter implements FormatterInterface
         }
 
         $content = [$message, ''];
-        foreach (['extra', 'context'] as $key) {
-            if (empty($record[$key])) {
-                continue;
-            }
+        if (!empty($record['context'])) {
+            $content[] = $this->addMarkdownTable('context', $record['context']);
+        }
 
-            $content[] = $this->addMarkdownTable($key, $record[$key]);
+        if (!empty($record['extra'])) {
+            $content[] = $this->addMarkdownTable('extra', $record['extra']);
         }
 
         return implode(PHP_EOL, $content);
@@ -151,9 +167,9 @@ class Formatter implements FormatterInterface
             '| Name | Value |',
             '|:---------|:---------|',
         ];
+
         foreach ($data as $name => $value) {
-            $value = $this->formatValue($value);
-            $content[] = "| $name | $value |";
+            $content[] = "| $name | ".$this->formatValue($value).' |';
         }
 
         $content[] = '';
