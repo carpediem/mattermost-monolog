@@ -36,20 +36,34 @@ class Handler extends AbstractProcessingHandler
     /**
      * New instance.
      *
-     * @param string|UriInterface $uri
-     * @param ClientInterface     $client
-     * @param int                 $level
-     * @param bool                $bubble
+     * @param mixed           $uri
+     * @param ClientInterface $client
+     * @param int             $level
+     * @param bool            $bubble
      */
     public function __construct($uri, ClientInterface $client, $level = Logger::DEBUG, $bubble = true)
     {
         parent::__construct($level, $bubble);
         $this->client = $client;
-        if (!$uri instanceof UriInterface && !is_string($uri)) {
-            throw new Exception(sprintf('% expects the uri to be an string or a %s object %s given', __METHOD__, UriInterface::class, gettype($uri)));
+        $this->uri = $this->filterUri($uri);
+    }
+
+    /**
+     * Filter Uri
+     *
+     * @param mixed $uri
+     *
+     * @throws Exception if the URI is invalid
+     *
+     * @return string
+     */
+    protected function filterUri($uri)
+    {
+        if (is_string($uri) || (is_object($uri) && method_exists($uri, '__toString'))) {
+            return (string) $uri;
         }
 
-        $this->uri = $uri;
+        throw new Exception(sprintf('% expects the uri to be an string or a stringable object', __METHOD__));
     }
 
     /**

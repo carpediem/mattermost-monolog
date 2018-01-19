@@ -23,31 +23,25 @@ The code above will register a Mattermost handler to your `Monolog\Logger` objec
 
 require __DIR__ . 'vendor/autoload.php';
 
-use Carpediem\Mattermost\Monolog\Formatter;
-use Carpediem\Mattermost\Monolog\Handler;
-use Carpediem\Mattermost\Webhook\Message;
-use Carpediem\Mattermost\Webhook\Client;
+use Carpediem\Mattermost;
 use GuzzleHttp\Client as GuzzleClient;
 use Monolog\Logger;
 
-$mattermost_message_template = (new Message('This text will be overriden by the logger'))
+$template = (new Mattermost\Webhook\Message('This text will be overriden by the logger'))
     ->setChannel('alerts')
     ->setUsername('AlertBot')
     ->setIconUrl('https://cdn2.iconfinder.com/data/icons/security-2-1/512/bug-512.png')
 ;
-$mattermost_monolog_formatter = new Formatter($mattermost_message_template);
 
-$mattermost_client = new Client(new GuzzleClient(['http_errors' => false]));
-$mattermost_monolog_handler = new Handler(
+$monolog_handler = new Mattermost\Monolog\Handler(
     'https://your_mattermost_webhook_url',
-    $mattermost_client
-    Logger::WARNING,
-    true
+    new Mattermost\Webhook\Client(new GuzzleClient(['http_errors' => false]))
+    Logger::WARNING
 );
-$mattermost_monolog_handler->setFormatter($mattermost_monolog_formatter);
+$monolog_handler->setFormatter(new Mattermost\Monolog\Formatter($template));
 
 $logger = new Logger('MyAwesomeLogger');
-$logger->pushHandler($mattermost_monolog_handler);
+$logger->pushHandler($monolog_handler);
 ```
 
 ## Advanced usage
