@@ -54,4 +54,4 @@ $logger->pushHandler($mattermost_monolog_handler);
 
 If you don't like our formatter don't worry you can create your own formatter as long as
 
-`Formatter::format` and `Formatter::formatBatch` returns a valid `Carpediem\Mattermost\Webhook\Message` object.
+`Formatter::format` and `Formatter::formatBatch` returns a valid `Carpediem\Mattermost\Webhook\MessageInterface` object.
